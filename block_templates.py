@@ -12,52 +12,202 @@
 # 'shape'는 테트리스 블록의 모양을 2D 리스트로 표현합니다. 1은 블록, 0은 빈 공간.
 
 POSE_TEMPLATES = {
-    # 1. I 모양 (일자 블록) - 양팔과 양다리를 쭉 뻗은 자세
-    "I_shape": {
-        'name': 'I Block',
+    # ---------------------------------------------------
+    # I BLOCK (2 rotations)
+    # ---------------------------------------------------
+    "I_0": {
+        'name': 'I Block 0°',
         'shape': [[1, 1, 1, 1]],
         'vectors': {
-            'right_arm': 180, 'left_arm': 180, 'right_leg': 180, 
-            'left_leg': 180, 'right_body': 90, 'left_body': 270
+            'right_arm': 180, 'left_arm': 180,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 90, 'left_body': 270
         }
     },
-    # 2. T 모양 - 양팔을 수평으로 들고 있는 자세
-    "T_shape": {
-        'name': 'T Block',
-        'shape': [[0, 1, 0], [1, 1, 1]],
+    "I_90": {
+        'name': 'I Block 90°',
+        'shape': [[1], [1], [1], [1]],
         'vectors': {
-            'right_arm': 90, 'left_arm': 270, 'right_leg': 180, 
-            'left_leg': 180, 'right_body': 180, 'left_body': 180
+            'right_arm': 90, 'left_arm': 270,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 0, 'left_body': 180
         }
     },
-    # 3. L 모양 - 한 팔은 위로, 한 팔은 옆으로 뻗은 자세
-    "L_shape": {
-        'name': 'L Block',
-        'shape': [[1, 0], [1, 0], [1, 1]],
-        'vectors': {
-            'right_arm': 180, 'left_arm': 270, 'right_leg': 180, 
-            'left_leg': 180, 'right_body': 90, 'left_body': 180
-        }
-    },
-    # 4. O 모양 (네모 블록) - 팔과 다리로 원을 만드는 듯한 자세
-    "O_shape": {
+
+    # ---------------------------------------------------
+    # O BLOCK (1 rotation)
+    # ---------------------------------------------------
+    "O_0": {
         'name': 'O Block',
         'shape': [[1, 1], [1, 1]],
         'vectors': {
-            'right_arm': 90, 'left_arm': 270, 'right_leg': 90,
-            'left_leg': 270, 'right_body': 135, 'left_body': 225
+            'right_arm': 90, 'left_arm': 270,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 135, 'left_body': 225
         }
     },
-    # 5. S 모양 - 한 팔은 위, 다른 팔은 아래로 향하는 자세
-    "S_shape": {
-        'name': 'S Block',
+
+    # ---------------------------------------------------
+    # T BLOCK (4 rotations)
+    # ---------------------------------------------------
+    "T_0": {
+        'name': 'T Block 0°',
+        'shape': [[0, 1, 0], [1, 1, 1]],
+        'vectors': {
+            'right_arm': 90, 'left_arm': 270,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+    "T_90": {
+        'name': 'T Block 90°',
+        'shape': [[1, 0], [1, 1], [1, 0]],
+        'vectors': {
+            'right_arm': 0, 'left_arm': 180,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+    "T_180": {
+        'name': 'T Block 180°',
+        'shape': [[1, 1, 1], [0, 1, 0]],
+        'vectors': {
+            'right_arm': 270, 'left_arm': 90,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+    "T_270": {
+        'name': 'T Block 270°',
+        'shape': [[0, 1], [1, 1], [0, 1]],
+        'vectors': {
+            'right_arm': 180, 'left_arm': 0,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 0, 'left_body': 180
+        }
+    },
+
+    # ---------------------------------------------------
+    # L BLOCK (4 rotations)
+    # ---------------------------------------------------
+    "L_0": {
+        'name': 'L Block 0°',
+        'shape': [[1, 0], [1, 0], [1, 1]],
+        'vectors': {
+            'right_arm': 180, 'left_arm': 270,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 90, 'left_body': 180
+        }
+    },
+    "L_90": {
+        'name': 'L Block 90°',
+        'shape': [[1, 1, 1], [1, 0, 0]],
+        'vectors': {
+            'right_arm': 0, 'left_arm': 180,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+    "L_180": {
+        'name': 'L Block 180°',
+        'shape': [[1, 1], [0, 1], [0, 1]],
+        'vectors': {
+            'right_arm': 0, 'left_arm': 180,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 270, 'left_body': 90
+        }
+    },
+    "L_270": {
+        'name': 'L Block 270°',
+        'shape': [[0, 0, 1], [1, 1, 1]],
+        'vectors': {
+            'right_arm': 180, 'left_arm': 0,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+
+    # ---------------------------------------------------
+    # J BLOCK (4 rotations)
+    # ---------------------------------------------------
+    "J_0": {
+        'name': 'J Block 0°',
+        'shape': [[0, 1], [0, 1], [1, 1]],
+        'vectors': {
+            'right_arm': 180, 'left_arm': 90,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 270, 'left_body': 90
+        }
+    },
+    "J_90": {
+        'name': 'J Block 90°',
+        'shape': [[1, 0, 0], [1, 1, 1]],
+        'vectors': {
+            'right_arm': 0, 'left_arm': 180,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+    "J_180": {
+        'name': 'J Block 180°',
+        'shape': [[1, 1], [1, 0], [1, 0]],
+        'vectors': {
+            'right_arm': 0, 'left_arm': 270,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+    "J_270": {
+        'name': 'J Block 270°',
+        'shape': [[1, 1, 1], [0, 0, 1]],
+        'vectors': {
+            'right_arm': 270, 'left_arm': 90,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+
+    # ---------------------------------------------------
+    # S BLOCK (2 rotations)
+    # ---------------------------------------------------
+    "S_0": {
+        'name': 'S Block 0°',
         'shape': [[0, 1, 1], [1, 1, 0]],
         'vectors': {
-            'right_arm': 45, 'left_arm': 225, 'right_leg': 180,
-            'left_leg': 180, 'right_body': 135, 'left_body': 225
+            'right_arm': 45, 'left_arm': 225,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 135, 'left_body': 225
         }
     },
-    
-    # 여기에 계속해서 다른 템플릿(J, Z 등)을 추가할 수 있습니다.
-    # 각도 값은 실제 테스트를 통해 가장 인식률이 좋은 값으로 조정하는 것이 좋습니다.
+    "S_90": {
+        'name': 'S Block 90°',
+        'shape': [[1, 0], [1, 1], [0, 1]],
+        'vectors': {
+            'right_arm': 315, 'left_arm': 135,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    },
+
+    # ---------------------------------------------------
+    # Z BLOCK (2 rotations)
+    # ---------------------------------------------------
+    "Z_0": {
+        'name': 'Z Block 0°',
+        'shape': [[1, 1, 0], [0, 1, 1]],
+        'vectors': {
+            'right_arm': 315, 'left_arm': 135,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 225, 'left_body': 135
+        }
+    },
+    "Z_90": {
+        'name': 'Z Block 90°',
+        'shape': [[0, 1], [1, 1], [1, 0]],
+        'vectors': {
+            'right_arm': 45, 'left_arm': 225,
+            'right_leg': 90, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180
+        }
+    }
 }

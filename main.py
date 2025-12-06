@@ -252,6 +252,7 @@ def main():
             draw_text(screen, f"Select one of the final 3 by standing in a zone", 30, SCREEN_WIDTH // 2, 50)
             draw_candidate_blocks(screen, candidate_blocks, current_zone)
 
+
             # 후보가 없으면 안전하게 RECOGNITION으로 복귀
             if not candidate_blocks:
                 game_state = STATE_RECOGNITION
@@ -271,13 +272,14 @@ def main():
                 target_template = candidate_blocks[current_zone]
 
                 # 타이머 시작(처음 zone에 들어갈 때)
+
                 if pose_timer_start is None:
                     pose_timer_start = time.time()
                     selected_block_info = target_template  # 후보로 잠정 선택
                 else:
                     # 만약 사용자가 zone을 바꿨다면 타이머 리셋하고 새 타겟 설정
                     if selected_block_info is not target_template:
-                        pose_timer_start = time.time()
+                        
                         selected_block_info = target_template
 
                 # 포즈 일치도 측정
@@ -316,6 +318,7 @@ def main():
                 game_state = STATE_GAME_OVER
                 continue
 
+
             # 블록 자동 하강
             if time.time() - fall_timer_start > INITIAL_FALL_INTERVAL:
                 game_logic.move(0, 1)
@@ -336,6 +339,9 @@ def main():
                 elif shoulder_center_x_screen > zone_third * 2: # 오른쪽 존
                     game_logic.move(1, 0)
                 # 중앙 존에서는 움직이지 않음
+
+
+
 
             # 움직이는 블록 그리기
             game_logic.draw_current_tetromino(screen)
