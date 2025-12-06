@@ -10,7 +10,7 @@ import cv2
 import pygame
 import random
 import time
-from collections import deque
+from collections import deque, Counter
 
 # 직접 만든 모듈 임포트
 from settings import *
@@ -103,16 +103,18 @@ def main():
     
     # 2. 게임 상태 및 변수 선언
     game_state = STATE_RECOGNITION
-    candidate_blocks = []             # 상위 3개 후보 블록 (템플릿 객체 리스트)
-    selected_block_info = None        # 사용자가 선택한 블록 정보
-    pose_timer_start = 0              # POSE_SELECTION에서 사용하는 타이머
+    candidate_blocks = []             # 상위 3개 후보 블록 (템플릿 객체 리스트, Recognition 종료 시 고정)
+    selected_block_info = None        # 사용자가 Selection에서 최종 선택한 블록 정보
+    pose_timer_start = None           # Selection에서 사용자가 포즈 유지 시작 시각
     fall_timer_start = time.time()    # 블록 자동 하강 타이머
 
-    # 포즈 5초 유지 관련
-    POSE_MATCH_HOLD_TIME = 5.0        # 사용자가 포즈를 5초 동안 유지해야 함
-    pose_match_start = None           # 포즈 유지 시작 시각
-    last_top1_key = None              # 5초 동안 마지막으로 관찰된 Top-1 키
+    # 포즈 5초 유지 관련 (Recognition 에서의 총 인식 시간)
+    RECOGNITION_DURATION = 5.0        # Recognition 단계에서 총 5초 동안 관찰하여 후보 결정
+    recognition_start = None          # Recognition 시작 시각
+    recognition_counter = Counter()   # Recognition 동안 관찰된 Top-1 키 빈도 카운터
 
+    
+    # 포즈 매칭 임계값은 settings에 정의된 POSE_SIMILARITY_THRESHOLD 사용
     # 좌우 이동 감지를 위한 변수 (선택 존 감지에도 사용)
     shoulder_x_history = deque(maxlen=10) # 어깨 중심의 x좌표 기록
 
@@ -146,18 +148,19 @@ def main():
                 similarities.append((key, sim))
             similarities.sort(key=lambda x: x[1], reverse=True)
 
-        # 어깨 중심 좌표 계산 및 현재 위치 존(Zone) 확인
+        # 어깨 중심 좌표 계산 및 현재 위치 존(Zone) 확인 (화면 좌표 기준 zone)
         current_zone = None
-        if lm_list and similarities:
+        if lm_list and similarities and len(similarities) > 0:
             left_shoulder, right_shoulder = lm_list[11], lm_list[12]
             shoulder_center_x_cam = (left_shoulder[1] + right_shoulder[1]) / 2
 
-            candidate_count = min(3, len(similarities))
-            zone_width = SCREEN_WIDTH / candidate_count
+            # candidate_count는 화면에 보이는 후보 수 (Recognition이 끝나기 전에는 실시간 top3, 끝나면 고정 후보 수)
+            candidate_count = min(3, len(similarities)) if not candidate_blocks else len(candidate_blocks)
+            zone_width = SCREEN_WIDTH / candidate_count if candidate_count > 0 else SCREEN_WIDTH
 
             shoulder_center_x_screen = shoulder_center_x_cam * (SCREEN_WIDTH / cam_width)
 
-            # --- 수정: 정확한 존 계산 (부동소수점 → int 변환 오류 제거) ---
+            # 안전한 정수 변환 및 범위 고정
             current_zone = int(shoulder_center_x_screen / zone_width)
             if current_zone < 0:
                 current_zone = 0
@@ -185,101 +188,128 @@ def main():
         # --- 게임 상태별 로직 & 그리기 ---
 
         if game_state == STATE_RECOGNITION:
-            draw_text(screen, "POSE as you NEED!", 50, SCREEN_WIDTH // 2, 50)
+            # Recognition 진입 시 시작 시간 초기화
+            if recognition_start is None:
+                recognition_start = time.time()
+                recognition_counter = Counter()
+
+            draw_text(screen, "POSE as you NEED! (Recognition)", 44, SCREEN_WIDTH // 2, 50)
 
             if user_vectors and similarities:
-                # 매 프레임 Top-3 템플릿을 갱신
-                top3_keys = [k for k, s in similarities[:3]]
-                candidate_blocks = [POSE_TEMPLATES[k] for k in top3_keys]
-
-                # 후보 블록을 화면에 그림
-                draw_candidate_blocks(screen, candidate_blocks)
-
-                # 오른쪽 상단에 실시간 Top-3와 점수 표시
+                # 매 프레임 Top-3 템플릿을 갱신하여 화면에 표시 (실시간 갱신)
+                realtime_top3_keys = [k for k, s in similarities[:3]]
+                realtime_candidate_blocks = [POSE_TEMPLATES[k] for k in realtime_top3_keys]
+                # 화면에는 실시간 Top-3 보여주기
+                draw_candidate_blocks(screen, realtime_candidate_blocks)
                 draw_live_top3(screen, similarities)
 
-                # 사용자가 특정 존에 들어가고 해당 존의 템플릿이 일정 유사도 이상이면 타이머 시작
-                if current_zone is not None:
-                    target_key = top3_keys[current_zone]
-                    target_score = dict(similarities)[target_key]
+                # Recognition 카운트: 매 프레임의 Top-1(가장 높은 유사도 키)을 관찰값으로 카운트
+                top1_key, top1_score = similarities[0]
+                if top1_score > POSE_SIMILARITY_THRESHOLD:
+                    recognition_counter[top1_key] += 1
 
-                    if target_score > POSE_SIMILARITY_THRESHOLD:
-                        # 포즈 유지 타이머 시작
-                        if pose_match_start is None:
-                            pose_match_start = time.time()
-                            # 초기 last_top1을 현재 Top-1으로 설정
-                            last_top1_key = similarities[0][0]
+                # 진행 시간 표시
+                elapsed_recog = time.time() - recognition_start
+                remaining = max(0.0, RECOGNITION_DURATION - elapsed_recog)
+                draw_text(screen, f"Recognizing... {elapsed_recog:.1f}s / {RECOGNITION_DURATION:.1f}s", 26, SCREEN_WIDTH//2, 220)
+                pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH//2 - 150, 250, 300 * (elapsed_recog / RECOGNITION_DURATION), 30))
 
-                        # 동안에는 Top-1을 계속 갱신 (마지막 순간 값이 사용됨)
-                        last_top1_key = similarities[0][0]
+                # Recognition 기간이 끝나면 최종 Top-3 결정하고 Selection으로 전환
+                if elapsed_recog >= RECOGNITION_DURATION:
+                    # recognition_counter로부터 최빈값 기반 top3 결정
+                    most_common = recognition_counter.most_common(3)  # [(key, cnt), ...]
+                    final_keys = [k for k, c in most_common]
 
-                        elapsed = time.time() - pose_match_start
-                        draw_text(screen, f"POSE RECOGNIZING: {elapsed:.1f}s / {POSE_MATCH_HOLD_TIME}s", 26, SCREEN_WIDTH//2, 220)
-                        # 진행 바 표시
-                        progress = min(1.0, elapsed / POSE_MATCH_HOLD_TIME)
-                        pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH//2 - 150, 250, 300 * progress, 30))
+                    # 만약 recognition_counter에 후보가 적게 모였으면, 실시간 top3로 채움
+                    if len(final_keys) < 3:
+                        for k, s in similarities[:3]:
+                            if k not in final_keys:
+                                final_keys.append(k)
+                            if len(final_keys) >= 3:
+                                break
 
-                        # 5초 유지 성공하면 최종 Top-1을 선택하고 Selection 상태로 전환
-                        if elapsed >= POSE_MATCH_HOLD_TIME:
-                            # 마지막에 관찰된 Top-1을 선택
-                            final_key = last_top1_key
-                            selected_block_info = POSE_TEMPLATES[final_key]
+                    # 이제 candidate_blocks를 최종 고정(Selection에서 이 3개 중 선택)
+                    candidate_blocks = [POSE_TEMPLATES[k] for k in final_keys]
+                    # reset selection variables
+                    selected_block_info = None
+                    pose_timer_start = None
 
-                            # Selection 단계 진입 (기존 로직에 맞게 포즈 타이머 초기화)
-                            pose_timer_start = time.time()
-                            game_state = STATE_SELECTION
+                    # move to selection state
+                    game_state = STATE_SELECTION
 
-                            # 타이머 리셋
-                            pose_match_start = None
-                            last_top1_key = None
-                    else:
-                        # 유사도 기준 미달 -> 타이머 리셋
-                        pose_match_start = None
-                        last_top1_key = None
-                else:
-                    # 존에 있지 않다면 타이머 리셋
-                    pose_match_start = None
-                    last_top1_key = None
+                    # reset recognition anchors
+                    recognition_start = None
+                    recognition_counter = Counter()
 
             else:
-                # 포즈가 인식되지 않으면 안내 문구 표시
-                draw_candidate_blocks(screen, candidate_blocks, current_zone) # 후보는 계속 표시
+                # 포즈가 인식되지 않을 때: 실시간 후보 표시(이전 후보 유지), 안내 문구
+                draw_candidate_blocks(screen, candidate_blocks)
                 draw_text(screen, "Show your WHOLE Body", 40, SCREEN_WIDTH // 2, 150)
-                # 리셋
-                pose_match_start = None
-                last_top1_key = None
+                # recognition도 계속 진행 타이머는 리셋하지 않음 - 사용자가 없으면 단순히 관찰 안 된 것으로 처리됨
 
         elif game_state == STATE_SELECTION:
-            # Selection 단계: 한번 진입하면 역행하지 않도록 유지
-            draw_text(screen, f"Stay still for {POSE_SELECTION_TIME}secs!", 40, SCREEN_WIDTH // 2, 50)
+            # Selection 단계: Recognition에서 고정된 candidate_blocks 중에서 선택
+            draw_text(screen, f"Select one of the final 3 by standing in a zone", 30, SCREEN_WIDTH // 2, 50)
             draw_candidate_blocks(screen, candidate_blocks, current_zone)
 
-            if user_vectors and candidate_blocks:
-                target_template = selected_block_info
+            # 후보가 없으면 안전하게 RECOGNITION으로 복귀
+            if not candidate_blocks:
+                game_state = STATE_RECOGNITION
+                recognition_start = None
+                recognition_counter = Counter()
+                continue
+
+            # 현재 화면에서 감지된 벡터가 있을 때만 selection 체크
+            if user_vectors and current_zone is not None:
+                # 안전하게 zone index 범위 맞추기
+                if current_zone < 0:
+                    current_zone = 0
+                elif current_zone >= len(candidate_blocks):
+                    current_zone = len(candidate_blocks) - 1
+
+                # 사용자가 서있는 zone의 템플릿을 타깃으로 설정
+                target_template = candidate_blocks[current_zone]
+
+                # 타이머 시작(처음 zone에 들어갈 때)
+                if pose_timer_start is None:
+                    pose_timer_start = time.time()
+                    selected_block_info = target_template  # 후보로 잠정 선택
+                else:
+                    # 만약 사용자가 zone을 바꿨다면 타이머 리셋하고 새 타겟 설정
+                    if selected_block_info is not target_template:
+                        pose_timer_start = time.time()
+                        selected_block_info = target_template
+
+                # 포즈 일치도 측정
                 similarity = PoseDetector.compare_poses(target_template['vectors'], user_vectors)
+                elapsed_hold = time.time() - pose_timer_start
 
-                # 사용자가 자세에서 잠깐 흔들려도 상태를 역행하지 않도록 유지
-                if similarity > POSE_SIMILARITY_THRESHOLD:
-                    # 포즈가 안정되면 기존 타이머 계속(처음 진입시 설정된 pose_timer_start 사용)
-                    hold_time = time.time() - pose_timer_start
-                    draw_text(screen, f"Selecting: {target_template['name']}", 30, SCREEN_WIDTH // 2, 220)
-                    progress = min(1.0, hold_time / POSE_SELECTION_TIME)
-                    pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH//2 - 150, 250, 300 * progress, 30))
+                # UI
+                draw_text(screen, f"Holding {target_template['name']}: {elapsed_hold:.1f}s / {POSE_SELECTION_TIME}s", 26, SCREEN_WIDTH//2, 220)
+                progress = min(1.0, elapsed_hold / POSE_SELECTION_TIME)
+                pygame.draw.rect(screen, GREEN, (SCREEN_WIDTH//2 - 150, 250, 300 * progress, 30))
 
-                    if hold_time >= POSE_SELECTION_TIME:
+                if similarity >= POSE_SIMILARITY_THRESHOLD:
+                    # 유지 시간이 충족되면 최종 확정
+                    if elapsed_hold >= POSE_SELECTION_TIME:
+                        # 최종 선택 블록 확정
                         game_logic.create_tetromino(selected_block_info)
                         fall_timer_start = time.time()
+                        # selection 완료 후 playing으로 이동
                         game_state = STATE_PLAYING
+                        # reset selection anchors
+                        pose_timer_start = None
+                        selected_block_info = None
                 else:
-                    # 자세가 흐트러져도 RECOGNITION으로 역행하지 않음.
-                    # 대신 경고 문구를 보여주고 pose_timer_start를 리셋하여 다시 유지해야 함.
-                    draw_text(screen, "Stay still!", 26, SCREEN_WIDTH//2, 220)
-                    # 리셋하되 상태는 그대로 유지
+                    # 포즈가 기준 미달이면 타이머 리셋(하지만 상태는 Selection에 머무름)
                     pose_timer_start = time.time()
+                    selected_block_info = target_template
+
             else:
-                # landmark 사라져도 Selection에서 바로 RECOGNITION으로 가지 않음
-                draw_text(screen, "Out of screen. Come back!", 26, SCREEN_WIDTH//2, 220)
-                pose_timer_start = time.time()
+                # landmark가 사라지거나 인식이 안될 때: 안내 및 타이머 리셋(상태 유지)
+                draw_text(screen, "Get into a zone and hold the pose!", 28, SCREEN_WIDTH//2, 220)
+                pose_timer_start = None
+                selected_block_info = None
 
         elif game_state == STATE_PLAYING:
             if game_logic.game_over:
@@ -291,7 +321,7 @@ def main():
                 game_logic.move(0, 1)
                 fall_timer_start = time.time()
 
-            # "서 있는 위치" 기반으로 블록 조작
+            # "서 있는 위치" 기반으로 블록 조작 (라이브 조작은 Recognition/Selection과 다름)
             if lm_list:
                 left_shoulder, right_shoulder = lm_list[11], lm_list[12]
                 shoulder_center_x_cam = (left_shoulder[1] + right_shoulder[1]) / 2
@@ -314,6 +344,8 @@ def main():
             if game_logic.current_tetromino is None:
                 game_state = STATE_RECOGNITION
                 candidate_blocks = [] # 후보 블록 리스트 초기화
+                recognition_start = None
+                recognition_counter = Counter()
             
         elif game_state == STATE_GAME_OVER:
             draw_text(screen, "GAME OVER", 100, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50)
