@@ -68,6 +68,7 @@ class GameLogic:
             return True
         return False
 
+#rotate 복잡해져서 빼고 모든 블록 탬플릿 추가함여
     def rotate(self):
         """현재 블록을 회전시킵니다."""
         if self.current_tetromino and not self.game_over:

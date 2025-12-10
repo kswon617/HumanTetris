@@ -96,33 +96,26 @@ class PoseDetector:
         return vectors
 
     @staticmethod
-    def compare_poses(template_vectors, user_vectors):
-        """
-        두 포즈 벡터 간의 코사인 유사도를 계산합니다.
-        유사도는 -1과 1 사이의 값이며, 1에 가까울수록 유사합니다.
-        
-        :param template_vectors: 비교 기준이 되는 템플릿 포즈 벡터
-        :param user_vectors: 사용자의 현재 포즈 벡터
-        :return: 코사인 유사도 값 (0~1 사이로 정규화)
-        """
+    def compare_poses(template_vectors, user_vectors, tolerance=30):
+
+
         if user_vectors is None or template_vectors is None:
             return 0
 
-        # 공통된 키(신체 부위)를 기준으로 벡터를 정렬
-        common_keys = sorted(list(set(template_vectors.keys()) & set(user_vectors.keys())))
-        
-        vec1 = np.array([template_vectors[key] for key in common_keys])
-        vec2 = np.array([user_vectors[key] for key in common_keys])
+        common_keys = template_vectors.keys()
+        total = 0
+        match = 0
 
-        # 코사인 유사도 계산
-        dot_product = np.dot(vec1, vec2)
-        norm_vec1 = np.linalg.norm(vec1)
-        norm_vec2 = np.linalg.norm(vec2)
+        for key in common_keys:
+            t = template_vectors[key]
+            u = user_vectors[key]
 
-        if norm_vec1 == 0 or norm_vec2 == 0:
-            return 0
-        
-        similarity = dot_product / (norm_vec1 * norm_vec2)
-        
-        # 결과를 0~1 사이로 조정
-        return max(0, similarity)
+            diff = abs(t - u)
+            diff = min(diff, 360 - diff)   # 0~180 사이로 정규화
+
+            if diff <= tolerance:
+                match += 1
+
+            total += 1
+
+        return match / total

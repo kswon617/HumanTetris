@@ -1,213 +1,245 @@
 # -----------------------------------------------------------------------------
-# block_templates.py
+# block_templates.py (human-friendly pose version)
 #
-# 테트리스 블록 모양과 그에 해당하는 신체 포즈(각도 벡터)를 정의하는 파일.
-# 사용자의 포즈와 여기에 정의된 템플릿을 비교하여 어떤 블록을 만들려는지 인식합니다.
+# 사람의 실제 포즈를 기준으로 제작된 템플릿.
+# 각 신체 파트는 MediaPipe 벡터 방향(0~360도)을 기준으로 비교된다.
+#
+# 방향 규칙:
+#   0°   = 화면 오른쪽
+#   90°  = 화면 위
+#   180° = 화면 왼쪽
+#   270° = 화면 아래
 # -----------------------------------------------------------------------------
 
-# 각 포즈는 신체 부위별 목표 각도를 나타내는 딕셔너리입니다.
-# 'right_arm', 'left_arm', 'right_leg', 'left_leg', 'right_body', 'left_body'
-# 각도는 0~360도 사이의 값을 가집니다.
-
-# 'shape'는 테트리스 블록의 모양을 2D 리스트로 표현합니다. 1은 블록, 0은 빈 공간.
-
 POSE_TEMPLATES = {
-    # ---------------------------------------------------
-    # I BLOCK (2 rotations)
-    # ---------------------------------------------------
+
+    # ============================================================
+    # I BLOCK (만세 자세)
+    # ============================================================
+
+    # I_0 : 서서 만세(세로)
     "I_0": {
         'name': 'I Block 0°',
+        'shape': [[1], [1], [1], [1]],
+        'vectors': {
+            'right_arm': 90, 'left_arm': 90,        # 만세
+            'right_leg': 270, 'left_leg': 270,      # 아래
+            'right_body': 90, 'left_body': 90       # 몸 위쪽
+        }
+    },
+
+    # I_90 : 누워서 만세(가로)
+    "I_90": {
+        'name': 'I Block 90°',
         'shape': [[1, 1, 1, 1]],
         'vectors': {
             'right_arm': 180, 'left_arm': 180,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 90, 'left_body': 270
+            'right_leg': 0, 'left_leg': 0,
+            'right_body': 180, 'left_body': 180      
         }
     },
-    "I_90": {
-        'name': 'I Block 90°',
-        'shape': [[1], [1], [1], [1]],
-        'vectors': {
-            'right_arm': 90, 'left_arm': 270,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 0, 'left_body': 180
-        }
-    },
+    
 
-    # ---------------------------------------------------
-    # O BLOCK (1 rotation)
-    # ---------------------------------------------------
+
+    # ============================================================
+    # O BLOCK (OTZ 자세)
+    # ============================================================
+
     "O_0": {
         'name': 'O Block',
         'shape': [[1, 1], [1, 1]],
         'vectors': {
-            'right_arm': 90, 'left_arm': 270,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 135, 'left_body': 225
+            'right_arm': 270, 'left_arm': 270,     
+            'right_leg': 180, 'left_leg': 180,      
+            'right_body': 0, 'left_body': 0       
         }
     },
 
-    # ---------------------------------------------------
-    # T BLOCK (4 rotations)
-    # ---------------------------------------------------
+    # ============================================================
+    # T BLOCK (ㅗㅏㅓㅜ)
+    # ============================================================
+
+    # ㅗ : 다리 좌우 + 만세
     "T_0": {
         'name': 'T Block 0°',
         'shape': [[0, 1, 0], [1, 1, 1]],
         'vectors': {
-            'right_arm': 90, 'left_arm': 270,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 90, 'left_arm': 90,        # 만세
+            'right_leg': 0, 'left_leg': 180,        # 다리 좌우 벌림
+            'right_body': 90, 'left_body': 90
         }
     },
+
+    # ㅏ : 오른팔 옆 + 왼팔 만세
     "T_90": {
         'name': 'T Block 90°',
         'shape': [[1, 0], [1, 1], [1, 0]],
         'vectors': {
-            'right_arm': 0, 'left_arm': 180,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 0, 'left_arm': 90,         # 오른팔 옆, 왼팔 위
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 90, 'left_body': 90
         }
     },
+
+    # ㅜ : 양팔 좌우
     "T_180": {
         'name': 'T Block 180°',
         'shape': [[1, 1, 1], [0, 1, 0]],
         'vectors': {
-            'right_arm': 270, 'left_arm': 90,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 0, 'left_arm': 180,        # 좌우
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 90, 'left_body': 90
         }
     },
+
+    # ㅓ : 왼팔 옆 + 오른팔 만세
     "T_270": {
         'name': 'T Block 270°',
         'shape': [[0, 1], [1, 1], [0, 1]],
         'vectors': {
-            'right_arm': 180, 'left_arm': 0,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 0, 'left_body': 180
+            'right_arm': 90, 'left_arm': 180,       # 오른팔 위, 왼팔 옆
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 90, 'left_body': 90
         }
     },
 
-    # ---------------------------------------------------
-    # L BLOCK (4 rotations)
-    # ---------------------------------------------------
+    # ============================================================
+    # L BLOCK (몸 기울기 + 만세, 다리는 항상 아래)
+    # ============================================================
+
     "L_0": {
         'name': 'L Block 0°',
         'shape': [[1, 0], [1, 0], [1, 1]],
         'vectors': {
-            'right_arm': 180, 'left_arm': 270,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 90, 'left_body': 180
+            'right_arm': 90, 'left_arm': 90,
+            'right_leg': 0, 'left_leg': 0,
+            'right_body': 90, 'left_body': 90        
         }
     },
+
     "L_90": {
         'name': 'L Block 90°',
         'shape': [[1, 1, 1], [1, 0, 0]],
         'vectors': {
-            'right_arm': 0, 'left_arm': 180,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 0, 'left_arm': 0,
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 0, 'left_body': 0     
         }
     },
+
     "L_180": {
         'name': 'L Block 180°',
         'shape': [[1, 1], [0, 1], [0, 1]],
         'vectors': {
-            'right_arm': 0, 'left_arm': 180,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 270, 'left_body': 90
+            'right_arm': 180, 'left_arm': 180,
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 90, 'left_body': 90    
         }
     },
+
     "L_270": {
         'name': 'L Block 270°',
         'shape': [[0, 0, 1], [1, 1, 1]],
         'vectors': {
-            'right_arm': 180, 'left_arm': 0,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 90, 'left_arm': 90,
+            'right_leg': 180, 'left_leg': 180,
+            'right_body': 0, 'left_body': 0      
         }
     },
 
-    # ---------------------------------------------------
-    # J BLOCK (4 rotations)
-    # ---------------------------------------------------
+    # ============================================================
+    # J BLOCK (L의 좌우 반전)
+    # ============================================================
+
     "J_0": {
         'name': 'J Block 0°',
         'shape': [[0, 1], [0, 1], [1, 1]],
         'vectors': {
-            'right_arm': 180, 'left_arm': 90,
+            'right_arm': 90, 'left_arm': 90,
             'right_leg': 180, 'left_leg': 180,
-            'right_body': 270, 'left_body': 90
+            'right_body': 90, 'left_body': 90    
         }
     },
+
     "J_90": {
         'name': 'J Block 90°',
-        'shape': [[1, 0, 0], [1, 1, 1]],
+        'shape': [[1, 1, 1], [0, 0, 1]],
         'vectors': {
-            'right_arm': 0, 'left_arm': 180,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 180, 'left_arm': 180,
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 180, 'left_body': 180     
         }
     },
+
     "J_180": {
         'name': 'J Block 180°',
         'shape': [[1, 1], [1, 0], [1, 0]],
         'vectors': {
-            'right_arm': 0, 'left_arm': 270,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 180, 'left_body': 180
-        }
-    },
-    "J_270": {
-        'name': 'J Block 270°',
-        'shape': [[1, 1, 1], [0, 0, 1]],
-        'vectors': {
-            'right_arm': 270, 'left_arm': 90,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 0, 'left_arm': 0,
+            'right_leg': 270, 'left_leg': 270,
+            'right_body': 90, 'left_body': 90      
         }
     },
 
-    # ---------------------------------------------------
-    # S BLOCK (2 rotations)
-    # ---------------------------------------------------
+    "J_270": {
+        'name': 'J Block 270°',
+        'shape': [[1, 0, 0], [1, 1, 1]],
+        'vectors': {
+            'right_arm': 90, 'left_arm': 90,
+            'right_leg': 0, 'left_leg': 0,
+            'right_body': 180, 'left_body': 180  
+        }
+    },
+
+    # ============================================================
+    # S BLOCK 
+    # ============================================================
+
+    # S_0
     "S_0": {
         'name': 'S Block 0°',
         'shape': [[0, 1, 1], [1, 1, 0]],
         'vectors': {
-            'right_arm': 45, 'left_arm': 225,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 135, 'left_body': 225
+            'right_arm': 0, 'left_arm': 0,          
+            'right_leg': 180, 'left_leg': 180,     
+            'right_body': 0, 'left_body': 0         
         }
     },
+
+    # S_90 : 상체→위, 다리→왼쪽, 팔→위
     "S_90": {
         'name': 'S Block 90°',
         'shape': [[1, 0], [1, 1], [0, 1]],
         'vectors': {
-            'right_arm': 315, 'left_arm': 135,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 90, 'left_arm': 90,        # 팔 위
+            'right_leg': 180, 'left_leg': 180,      # 다리 왼쪽
+            'right_body': 90, 'left_body': 90
         }
     },
 
-    # ---------------------------------------------------
-    # Z BLOCK (2 rotations)
-    # ---------------------------------------------------
+    # ============================================================
+    # Z BLOCK (S의 좌우 반전)
+    # ============================================================
+
+    # Z_0 : 상체→왼쪽, 다리→아래, 팔→왼쪽
     "Z_0": {
         'name': 'Z Block 0°',
         'shape': [[1, 1, 0], [0, 1, 1]],
         'vectors': {
-            'right_arm': 315, 'left_arm': 135,
-            'right_leg': 180, 'left_leg': 180,
-            'right_body': 225, 'left_body': 135
+            'right_arm': 180, 'left_arm': 180,      # 팔 왼쪽
+            'right_leg': 0, 'left_leg': 0,      # 다리 아래
+            'right_body': 180, 'left_body': 180     # 상체 왼쪽
         }
     },
+
+    # Z_90 : 상체→위, 다리→오른쪽, 팔→위
     "Z_90": {
         'name': 'Z Block 90°',
         'shape': [[0, 1], [1, 1], [1, 0]],
         'vectors': {
-            'right_arm': 45, 'left_arm': 225,
-            'right_leg': 90, 'left_leg': 270,
-            'right_body': 180, 'left_body': 180
+            'right_arm': 90, 'left_arm': 90,        # 팔 위
+            'right_leg': 270, 'left_leg': 270,          # 다리 오른쪽
+            'right_body': 90, 'left_body': 90
         }
     }
 }
