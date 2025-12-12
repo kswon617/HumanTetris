@@ -45,7 +45,7 @@ STATE_GAME_OVER = 4    # 5. 게임 오버
 
 # 포즈 인식 관련 설정
 POSE_CONFIDENCE_THRESHOLD = 0.5  # MediaPipe가 포즈를 감지했다고 판단하는 최소 신뢰도
-POSE_SIMILARITY_THRESHOLD = 0.6  # 사용자의 포즈가 템플릿과 얼마나 유사해야 하는지에 대한 임계값
+POSE_SIMILARITY_THRESHOLD = 0.7  # 사용자의 포즈가 템플릿과 얼마나 유사해야 하는지에 대한 임계값
 POSE_SELECTION_TIME = 3          # 블록 선택을 위해 포즈를 유지해야 하는 시간 (초)
 
 # 블록 떨어지는 속도 (숫자가 작을수록 빠름)
