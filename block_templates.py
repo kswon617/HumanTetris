@@ -161,8 +161,8 @@ POSE_TEMPLATES = {
         }
     },
 
-    "J_90": {
-        'name': 'J Block 90°',
+    "J_270": {
+        'name': 'J Block 270°',
         'shape': [[1, 1, 1], [0, 0, 1]],
         'vectors': {
             'right_arm': 180, 'left_arm': 180,
@@ -181,8 +181,8 @@ POSE_TEMPLATES = {
         }
     },
 
-    "J_270": {
-        'name': 'J Block 270°',
+    "J_90": {
+        'name': 'J Block 90°',
         'shape': [[1, 0, 0], [1, 1, 1]],
         'vectors': {
             'right_arm': 90, 'left_arm': 90,
