@@ -60,8 +60,8 @@ POSE_TEMPLATES = {
     # ============================================================
 
     # ㅗ : 다리 좌우 + 만세
-    "T_0": {
-        'name': 'T Block 0°',
+    "T_180": {
+        'name': 'T Block 180°',
         'shape': [[0, 1, 0], [1, 1, 1]],
         'vectors': {
             'right_arm': 90, 'left_arm': 90,        # 만세
@@ -71,8 +71,8 @@ POSE_TEMPLATES = {
     },
 
     # ㅏ : 오른팔 옆 + 왼팔 만세
-    "T_90": {
-        'name': 'T Block 90°',
+    "T_270": {
+        'name': 'T Block 270°',
         'shape': [[1, 0], [1, 1], [1, 0]],
         'vectors': {
             'right_arm': 0, 'left_arm': 90,         # 오른팔 옆, 왼팔 위
@@ -82,8 +82,8 @@ POSE_TEMPLATES = {
     },
 
     # ㅜ : 양팔 좌우
-    "T_180": {
-        'name': 'T Block 180°',
+    "T_0": {
+        'name': 'T Block 0°',
         'shape': [[1, 1, 1], [0, 1, 0]],
         'vectors': {
             'right_arm': 0, 'left_arm': 180,        # 좌우
@@ -93,8 +93,8 @@ POSE_TEMPLATES = {
     },
 
     # ㅓ : 왼팔 옆 + 오른팔 만세
-    "T_270": {
-        'name': 'T Block 270°',
+    "T_90": {
+        'name': 'T Block 90°',
         'shape': [[0, 1], [1, 1], [0, 1]],
         'vectors': {
             'right_arm': 90, 'left_arm': 180,       # 오른팔 위, 왼팔 옆
